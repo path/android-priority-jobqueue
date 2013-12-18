@@ -43,7 +43,7 @@ Since a code example is worth thousands of documentation pages, here it is. ([fu
 File: SendTweetJob.java
 ``` java
 // A job to send a tweet
-public class PostTweetJob extends BaseJob implements Serializeable {
+public class PostTweetJob extends BaseJob implements Serializable {
     private String text;
     public PostTweetJob(String text) {
         // This job requires network connectivity,
