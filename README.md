@@ -7,7 +7,7 @@ Priority Job Queue is an implementation of a [Job Queue](http://en.wikipedia.org
 
 It is written primarily with [flexibility][10] & [functionality][11] in mind. This is an ongoing project, which we will continue to add stability and performance improvements.
 
-  - [Why ?](#why-)
+  - [Why?](#why-)
    - [The Problem](#the-problem) 
    - [Our Solution](#our-solution)
   - [Show me the code](#show-me-the-code)
@@ -21,7 +21,7 @@ It is written primarily with [flexibility][10] & [functionality][11] in mind. Th
   - [License](#license)
 
 
-### Why ?
+### Why?
 #### The Problem
 Almost every application does work in a background thread. These "background tasks" are expected to keep the application responsive and robust, especially during unfavorable situations (e.g. limited network connectivity). In Android applications, there are several ways to implement background work:
  
@@ -98,7 +98,7 @@ That's it. :) Job Manager allows you to enjoy:
 It runs on a background thread because Job Queue will make a disk access to persist the job.
 
 * Right after `PostTweetJob` is synchronized to disk, Job Queue calls `DependencyInjector` (if provided) which will [inject fields](http://en.wikipedia.org/wiki/Dependency_injection) into our job instance. 
-At `PostTweetJob.onAdded()` callback, we saved `PostTweetJob` to disk. Since there has been no network access up to this point, the time between clicking the send button and reaching `onAdded()` is within fracions of a second. This allows the implementation of `onAdded()` to inform UI to display the newly sent tweet almost instantly, creating a "fast" user experience. Beware, `onAdded()` is called on the thread job was added.
+At `PostTweetJob.onAdded()` callback, we saved `PostTweetJob` to disk. Since there has been no network access up to this point, the time between clicking the send button and reaching `onAdded()` is within fractions of a second. This allows the implementation of `onAdded()` to inform UI to display the newly sent tweet almost instantly, creating a faster user experience. Beware, `onAdded()` is called on the thread the job was added.
 
 * When it's time for `PostTweetJob` to run, Job Queue will call `onRun()` (and it will only be called if there is an active network connection, as dictated at the job's constructor). 
 By default, Job Queue uses a simple connection utility that checks `ConnectivityManager` (ensure you have `ACCESS_NETWORK_STATE` permission in your manifest). You can provide a [custom implementation][1] which can
@@ -112,7 +112,7 @@ Job Queue will call `shouldReRunOnThrowable()` to allow you to handle the except
 your database, inform the user, etc.
 
 ### Advantages
-* It is very easy to de-couple application logic from your activites, making your code more robust, easy to refactor, and easy to **test**.
+* It is very easy to decouple application logic from your activities, making your code more robust, easy to refactor, and easy to **test**.
 * You don't have to deal with `AsyncTask` lifecycles. This is true assuming you use an event bus to update your UI (you should).
 At Path, we use [greenrobot's EventBus](https://github.com/greenrobot/EventBus); however, you can also go with your favorite. (e.g. [Square's Otto] (https://github.com/square/otto))
 * Job Queue takes care of prioritizing jobs, checking network connection, running them in parallel, etc. Job prioritization is especially indispensable when you have a resource-heavy app like ours.
@@ -129,7 +129,7 @@ Gradle: `compile 'com.path:android-priority-jobqueue:0.9.9'`
 
 Maven:
 
-``` xml
+```xml
 <dependency>
     <groupId>com.path</groupId>
     <artifactId>android-priority-jobqueue</artifactId>
@@ -150,29 +150,28 @@ We highly recommend checking how you can configure job manager and individual jo
 ### Dependencies
 - Job Queue does not depend on any other libraries other than Android SDK.
 - For testing, we use:
-- - [Junit 4](http://junit.org/) ([license](https://github.com/junit-team/junit/blob/master/LICENSE.txt))
-- - [Robolectric](http://robolectric.org/) ([license](https://github.com/robolectric/robolectric/blob/master/LICENSE.txt))
-- - [Fest Util](http://easytesting.org/) ([license](http://www.apache.org/licenses/LICENSE-2.0))
-- - [Hamcrest](https://code.google.com/p/hamcrest/) ([license](http://opensource.org/licenses/BSD-3-Clause))
+    - [Junit 4](http://junit.org/) ([license](https://github.com/junit-team/junit/blob/master/LICENSE.txt))
+    - [Robolectric](http://robolectric.org/) ([license](https://github.com/robolectric/robolectric/blob/master/LICENSE.txt))
+    - [Fest Util](http://easytesting.org/) ([license](http://www.apache.org/licenses/LICENSE-2.0))
+    - [Hamcrest](https://code.google.com/p/hamcrest/) ([license](http://opensource.org/licenses/BSD-3-Clause))
 - For code coverage report, we use:
-- - [Cobertura](http://cobertura.github.io/cobertura/) ([license](https://github.com/cobertura/cobertura/blob/master/LICENSE.txt/))
+    - [Cobertura](http://cobertura.github.io/cobertura/) ([license](https://github.com/cobertura/cobertura/blob/master/LICENSE.txt/))
 - Sample Twitter client uses:
-- - [Twitter4j](http://twitter4j.org/en)
-- - [EventBus](https://github.com/greenrobot/EventBus)
-- - [Path's fork of greenDAO](https://github.com/path/greenDAO) . ([original repo](https://github.com/greenrobot/greenDAO))
+    - [Twitter4j](http://twitter4j.org/en)
+    - [EventBus](https://github.com/greenrobot/EventBus)
+    - [Path's fork of greenDAO](https://github.com/path/greenDAO) ([original repo](https://github.com/greenrobot/greenDAO))
 
 ### Building
 We are in the process of moving build system from ant to gradle. Right now, you can build with gradle but if you want to run tests, you'll need ant.
 
-* Clone the repo
-* `> cd jobqueue`
-* `> ant clean build-jar`
-* 
-This will create a jar file under _release_ folder.
+* Clone the repo.
+* `$ cd jobqueue`
+* `$ ant clean build-jar`
+* This will create a jar file under _release_ folder.
 
 #### Running Tests
-* > `cd jobqueue`
-* > `ant clean test`
+* `$ cd jobqueue`
+* `$ ant clean test`
 
 
 ## License
