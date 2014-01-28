@@ -72,4 +72,11 @@ public interface JobQueue {
      */
     void clear();
 
+    /**
+     * returns the job with the given id if it exists in the queue
+     * @param id id of the job, returned by insert method
+     * @return JobHolder with the given id or null if it does not exists
+     */
+    JobHolder findJobById(long id);
+
 }

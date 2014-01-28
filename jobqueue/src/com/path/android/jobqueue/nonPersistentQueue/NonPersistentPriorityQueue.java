@@ -91,9 +91,20 @@ public class NonPersistentPriorityQueue implements JobQueue {
         return next == null ? null : next.getDelayUntilNs();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void clear() {
         jobs.clear();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JobHolder findJobById(long id) {
+        return jobs.findById(id);
     }
 
     public final Comparator<JobHolder> jobComparator = new Comparator<JobHolder>() {

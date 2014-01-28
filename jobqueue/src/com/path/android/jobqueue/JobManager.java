@@ -156,6 +156,10 @@ public class JobManager implements NetworkEventProvider.Listener {
         addJobInBackground(job.getPriority(), job.getDelayInMs(), job);
     }
 
+    public void addJobInBackground(Job job, /*nullable*/ AsyncAddCallback callback) {
+        addJobInBackground(job.getPriority(), job.getDelayInMs(), job, callback);
+    }
+
     //need to sync on related job queue before calling this
     private void addOnAddedLock(ConcurrentHashMap<Long, CountDownLatch> lockMap, long id) {
         lockMap.put(id, new CountDownLatch(1));
@@ -297,6 +301,48 @@ public class JobManager implements NetworkEventProvider.Listener {
         if(jobHolder.getGroupId() != null) {
             runningJobGroups.remove(jobHolder.getGroupId());
         }
+    }
+
+    /**
+     * Returns the current status of a {@link Job}.
+     * <p>
+     *     You should not call this method on the UI thread because it may make a db request.
+     * </p>
+     * <p>
+     *     This is not a very fast call so try not to make it unless necessary. Consider using events if you need to be
+     *     informed about a job's lifecycle.
+     * </p>
+     * @param id the ID, returned by the addJob method
+     * @param isPersistent Jobs are added to different queues depending on if they are persistent or not. This is necessary
+     *                     because each queue has independent id sets.
+     * @return
+     */
+    public JobStatus getJobStatus(long id, boolean isPersistent) {
+        if(jobConsumerExecutor.isRunning(id, isPersistent)) {
+            return JobStatus.RUNNING;
+        }
+        JobHolder holder;
+        if(isPersistent) {
+            synchronized (persistentJobQueue) {
+                holder = persistentJobQueue.findJobById(id);
+            }
+        } else {
+            synchronized (nonPersistentJobQueue) {
+                holder = nonPersistentJobQueue.findJobById(id);
+            }
+        }
+        if(holder == null) {
+            return JobStatus.UNKNOWN;
+        }
+        boolean network = hasNetwork();
+        if(holder.requiresNetwork() && !network) {
+            return JobStatus.WAITING_NOT_READY;
+        }
+        if(holder.getDelayUntilNs() > System.nanoTime()) {
+            return JobStatus.WAITING_NOT_READY;
+        }
+
+        return JobStatus.WAITING_READY;
     }
 
     private void removeJob(JobHolder jobHolder) {
@@ -497,12 +543,20 @@ public class JobManager implements NetworkEventProvider.Listener {
      */
     @Deprecated
     public void addJobInBackground(final int priority, final long delay, final BaseJob baseJob) {
+        addJobInBackground(priority, delay, baseJob, null);
+    }
+
+    protected void addJobInBackground(final int priority, final long delay, final BaseJob baseJob,
+        /*nullable*/final AsyncAddCallback callback) {
         final long callTime = System.nanoTime();
         timedExecutor.execute(new Runnable() {
             @Override
             public void run() {
                 final long runDelay = (System.nanoTime() - callTime) / NS_PER_MS;
-                addJob(priority, Math.max(0, delay - runDelay), baseJob);
+                long id = addJob(priority, Math.max(0, delay - runDelay), baseJob);
+                if(callback != null) {
+                    callback.onAdded(id);
+                }
             }
         });
     }
