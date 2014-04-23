@@ -190,6 +190,71 @@ public class JobManager implements NetworkEventProvider.Listener {
     }
 
     /**
+     * Cancels job which is waiting to be run.
+     * @param id the ID, returned by the addJob method
+     * @param isPersistent Jobs are added to different queues depending on if they are persistent or not. This is necessary
+     *                     because each queue has independent id sets.
+     * @return true when job is actually canceled, otherwise false (such like already running or not exists).
+     */
+    public boolean cancelJob(long id, boolean isPersistent) {
+        JobHolder holder;
+        synchronized (getNextJobLock) { // to keep from the job state to be changed to running
+            if (jobConsumerExecutor.isRunning(id, isPersistent))
+                return false;
+            if (isPersistent) {
+                synchronized (persistentJobQueue) {
+                    holder = persistentJobQueue.findJobById(id);
+                    if (holder == null)
+                        return false;
+                    persistentJobQueue.remove(holder);
+                }
+            } else {
+                synchronized (nonPersistentJobQueue) {
+                    holder = nonPersistentJobQueue.findJobById(id);
+                    if (holder == null)
+                        return false;
+                    nonPersistentJobQueue.remove(holder);
+                }
+            }
+        }
+        BaseJob baseJob = holder.getBaseJob();
+        if(dependencyInjector != null) {
+            //inject members b4 calling onCancel
+            dependencyInjector.inject(baseJob);
+        }
+        baseJob.onCancel();
+        return true;
+    }
+
+    /**
+     * Non-blocking convenience method to cancel a job in background thread.
+     *
+     * @see #cancelJob(long, boolean)
+     * @param id the ID, returned by the addJob method
+     * @param isPersistent Jobs are added to different queues depending on if they are persistent or not. This is necessary
+     *                     because each queue has independent id sets.
+     */
+    public void cancelJobInBackground(long id, boolean isPersistent) {
+        cancelJobInBackground(id, isPersistent, null);
+    }
+
+    public void cancelJobInBackground(final long id, final boolean isPersistent, /*nullable*/ final AsyncCancelCallback callback) {
+        timedExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    boolean isCanceled = cancelJob(id, isPersistent);
+                    if(callback != null) {
+                        callback.onCancel(id, isCanceled);
+                    }
+                } catch (Throwable t) {
+                    JqLog.e(t, "cancelJobInBackground received an exception. job id: %ld", id);
+                }
+            }
+        });
+    }
+
+    /**
      * checks next available job and returns when it will be available (if it will, otherwise returns {@link Long#MAX_VALUE})
      * also creates a timer to notify listeners at that time
      * @param hasNetwork .
