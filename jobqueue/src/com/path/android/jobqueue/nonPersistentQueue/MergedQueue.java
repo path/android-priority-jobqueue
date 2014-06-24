@@ -214,6 +214,13 @@ abstract public class MergedQueue implements JobSet {
         return q0 == null ? queue1.findById(id) : q0;
     }
 
+    @Override
+    public List<Long> getJobIds() {
+        List<Long> ids = queue0.getJobIds();
+        ids.addAll(queue1.getJobIds());
+        return ids;
+    }
+
     /**
      * simple enum to identify queues
      */

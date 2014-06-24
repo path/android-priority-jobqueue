@@ -10,12 +10,14 @@ import com.path.android.jobqueue.log.JqLog;
 public class SqlHelper {
 
     /**package**/ String FIND_BY_ID_QUERY;
+    String FIND_ALL_IDS_QUERY;
 
     private SQLiteStatement insertStatement;
     private SQLiteStatement insertOrReplaceStatement;
     private SQLiteStatement deleteStatement;
     private SQLiteStatement onJobFetchedForRunningStatement;
     private SQLiteStatement countStatement;
+    private SQLiteStatement idsStatement;
     private SQLiteStatement nextJobDelayedUntilWithNetworkStatement;
     private SQLiteStatement nextJobDelayedUntilWithoutNetworkStatement;
 
@@ -33,6 +35,7 @@ public class SqlHelper {
         this.primaryKeyColumnName = primaryKeyColumnName;
         this.sessionId = sessionId;
         FIND_BY_ID_QUERY = "SELECT * FROM " + tableName + " WHERE " + DbOpenHelper.ID_COLUMN.columnName + " = ?";
+        FIND_ALL_IDS_QUERY = "Select " + DbOpenHelper.ID_COLUMN.columnName + " FROM " + tableName;
     }
 
     public static String create(String tableName, Property primaryKey, Property... properties) {

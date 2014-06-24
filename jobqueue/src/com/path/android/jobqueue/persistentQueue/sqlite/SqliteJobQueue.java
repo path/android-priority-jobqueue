@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Persistent Job Queue that keeps its data in an sqlite database.
@@ -176,6 +178,22 @@ public class SqliteJobQueue implements JobQueue {
         } finally {
             cursor.close();
         }
+    }
+
+    @Override
+    public List<Long> getJobIds() {
+        ArrayList<Long> ids = new ArrayList<Long>();
+        Cursor cursor = db.rawQuery(sqlHelper.FIND_ALL_IDS_QUERY, null);
+        try {
+            if (cursor.moveToFirst()) {
+                do {
+                    ids.add(cursor.getLong(0));
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            cursor.close();
+        }
+        return ids;
     }
 
     /**

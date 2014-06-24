@@ -4,6 +4,7 @@ import com.path.android.jobqueue.JobHolder;
 import com.path.android.jobqueue.JobQueue;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * a class that implements {@link JobQueue} interface, wraps another {@link JobQueue} and caches
@@ -97,6 +98,12 @@ public class CachedJobQueue implements JobQueue {
     public JobHolder findJobById(long id) {
         return delegate.findJobById(id);
     }
+
+    @Override
+    public List<Long> getJobIds() {
+        return delegate.getJobIds();
+    }
+
 
     private static class Cache {
         Integer count;

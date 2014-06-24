@@ -3,6 +3,7 @@ package com.path.android.jobqueue.nonPersistentQueue;
 import com.path.android.jobqueue.JobHolder;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * An interface for Job Containers
@@ -12,6 +13,7 @@ public interface JobSet {
     public JobHolder peek(Collection<String> excludeGroupIds);
     public JobHolder poll(Collection<String> excludeGroupIds);
     public JobHolder findById(long id);
+    public List<Long> getJobIds();
     public boolean offer(JobHolder holder);
     public boolean remove(JobHolder holder);
     public void clear();

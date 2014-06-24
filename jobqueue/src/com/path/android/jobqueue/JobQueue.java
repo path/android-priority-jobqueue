@@ -1,6 +1,7 @@
 package com.path.android.jobqueue;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Interface that any JobQueue should implement
@@ -78,5 +79,11 @@ public interface JobQueue {
      * @return JobHolder with the given id or null if it does not exists
      */
     JobHolder findJobById(long id);
+
+    /**
+     * returns an array of all the job ids stored in the queue
+     * @return Array of the current job ids.
+     */
+    List<Long> getJobIds();
 
 }
