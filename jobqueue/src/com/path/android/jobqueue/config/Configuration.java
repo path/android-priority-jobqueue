@@ -21,12 +21,16 @@ public class Configuration {
     public static final int DEFAULT_LOAD_FACTOR_PER_CONSUMER = 3;
     public static final int MAX_CONSUMER_COUNT = 5;
     public static final int MIN_CONSUMER_COUNT = 0;
+    public static final int FLUSH_AFTER_MS = 0;
+    public static final int MAX_JOBS_FLUSH_AT= 50;
 
     private String id = DEFAULT_ID;
     private int maxConsumerCount = MAX_CONSUMER_COUNT;
     private int minConsumerCount = MIN_CONSUMER_COUNT;
     private int consumerKeepAlive = DEFAULT_THREAD_KEEP_ALIVE_SECONDS;
     private int loadFactor = DEFAULT_LOAD_FACTOR_PER_CONSUMER;
+    private long flushAfter_Ms = FLUSH_AFTER_MS;
+    private int flushAt = MAX_JOBS_FLUSH_AT;
     private QueueFactory queueFactory;
     private DependencyInjector dependencyInjector;
     private NetworkUtil networkUtil;
@@ -70,6 +74,14 @@ public class Configuration {
 
     public int getLoadFactor() {
         return loadFactor;
+    }
+
+    public long getFlushAfter_Ms() {
+        return flushAfter_Ms;
+    }
+
+    public int getFlushAt() {
+        return flushAt;
     }
 
     public static final class Builder {
@@ -119,7 +131,7 @@ public class Configuration {
         /**
          * convenient configuration to replace job serializer while using {@link SqliteJobQueue} queue for persistence.
          * by default, it uses a {@link SqliteJobQueue.JavaSerializer} which will use default Java serialization.
-         * @param JobSerializer
+         * @param jobSerializer
          * @return
          */
         public Builder jobSerializer(SqliteJobQueue.JobSerializer jobSerializer) {
@@ -186,6 +198,31 @@ public class Configuration {
          */
         public Builder loadFactor(int loadFactor) {
             configuration.loadFactor = loadFactor;
+            return this;
+        }
+
+        /**
+         * Sets the maximum length of time (in milliseconds) that the JobManager will wait before
+         * flushing the queue0.
+         *
+         * <br>Defaults to {@value #FLUSH_AFTER_MS} (i.e., queue will begin consuming jobs as soon as they are added)
+         *
+         * @param flushTimeInMS
+         */
+        public Builder flushAfter(int flushTimeInMS) {
+            configuration.flushAfter_Ms = flushTimeInMS;
+            return this;
+        }
+
+        /**
+         * Sets the maximum job size (across all consumer threads) allowed before the JobManager will
+         * flush the queue.
+         *
+         * <br> Defaults to {@value #MAX_JOBS_FLUSH_AT}
+         * @param maxJobsCap
+         */
+        public Builder flushAt(int maxJobsCap){
+            configuration.flushAt = maxJobsCap;
             return this;
         }
 
