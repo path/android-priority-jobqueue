@@ -2,10 +2,13 @@ package com.path.android.jobqueue.config;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
+
 import com.path.android.jobqueue.JobManager;
 import com.path.android.jobqueue.JobQueue;
 import com.path.android.jobqueue.QueueFactory;
 import com.path.android.jobqueue.di.DependencyInjector;
+import com.path.android.jobqueue.flush.DispatchTimerInterface;
+import com.path.android.jobqueue.flush.SimpleDispatchTimer;
 import com.path.android.jobqueue.log.CustomLogger;
 import com.path.android.jobqueue.network.NetworkUtil;
 import com.path.android.jobqueue.network.NetworkUtilImpl;
@@ -21,7 +24,6 @@ public class Configuration {
     public static final int DEFAULT_LOAD_FACTOR_PER_CONSUMER = 3;
     public static final int MAX_CONSUMER_COUNT = 5;
     public static final int MIN_CONSUMER_COUNT = 0;
-    public static final int FLUSH_AFTER_MS = 0;
     public static final int MAX_JOBS_FLUSH_AT= 50;
 
     private String id = DEFAULT_ID;
@@ -29,12 +31,12 @@ public class Configuration {
     private int minConsumerCount = MIN_CONSUMER_COUNT;
     private int consumerKeepAlive = DEFAULT_THREAD_KEEP_ALIVE_SECONDS;
     private int loadFactor = DEFAULT_LOAD_FACTOR_PER_CONSUMER;
-    private long flushAfter_Ms = FLUSH_AFTER_MS;
     private int flushAt = MAX_JOBS_FLUSH_AT;
     private QueueFactory queueFactory;
     private DependencyInjector dependencyInjector;
     private NetworkUtil networkUtil;
     private CustomLogger customLogger;
+    private DispatchTimerInterface dispatchTimer;
 
     private Configuration(){
         //use builder instead
@@ -76,12 +78,12 @@ public class Configuration {
         return loadFactor;
     }
 
-    public long getFlushAfter_Ms() {
-        return flushAfter_Ms;
-    }
-
     public int getFlushAt() {
         return flushAt;
+    }
+
+    public DispatchTimerInterface getDispatchTimer(){
+        return dispatchTimer;
     }
 
     public static final class Builder {
@@ -202,19 +204,6 @@ public class Configuration {
         }
 
         /**
-         * Sets the maximum length of time (in milliseconds) that the JobManager will wait before
-         * flushing the queue0.
-         *
-         * <br>Defaults to {@value #FLUSH_AFTER_MS} (i.e., queue will begin consuming jobs as soon as they are added)
-         *
-         * @param flushTimeInMS
-         */
-        public Builder flushAfter(int flushTimeInMS) {
-            configuration.flushAfter_Ms = flushTimeInMS;
-            return this;
-        }
-
-        /**
          * Sets the maximum job size (across all consumer threads) allowed before the JobManager will
          * flush the queue.
          *
@@ -226,6 +215,17 @@ public class Configuration {
             return this;
         }
 
+        /**
+         * you can provide a custom DispatchTimer to determine when to flush JobManager.
+         * By default, the queue will begin consuming jobs when JobManager is initialized.
+         *
+         * @param timer
+         */
+        public Builder dispatchTimer(DispatchTimerInterface timer){
+            configuration.dispatchTimer = timer;
+            return this;
+        }
+
         public Configuration build() {
             if(configuration.queueFactory == null) {
                 configuration.queueFactory = new JobManager.DefaultQueueFactory();
@@ -233,6 +233,10 @@ public class Configuration {
             if(configuration.networkUtil == null) {
                 configuration.networkUtil = new NetworkUtilImpl(appContext);
             }
+            if(configuration.dispatchTimer == null){
+                configuration.dispatchTimer = new SimpleDispatchTimer();
+            }
+
             return configuration;
         }
     }

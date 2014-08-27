@@ -6,8 +6,8 @@ import com.path.android.jobqueue.cachedQueue.CachedJobQueue;
 import com.path.android.jobqueue.config.Configuration;
 import com.path.android.jobqueue.di.DependencyInjector;
 import com.path.android.jobqueue.executor.JobConsumerExecutor;
-import com.path.android.jobqueue.flush.DispatchTimerFactory;
-import com.path.android.jobqueue.flush.DispatchTimerFactory.DispatchTimer;
+import com.path.android.jobqueue.flush.DispatchTimerInterface;
+import com.path.android.jobqueue.flush.DispatchTimerInterface.TimerDispatcher;
 import com.path.android.jobqueue.log.JqLog;
 import com.path.android.jobqueue.network.NetworkEventProvider;
 import com.path.android.jobqueue.network.NetworkUtil;
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * -> Grouping jobs so that they won't run at the same time
  * -> Stats like waiting Job Count
  */
-public class JobManager implements NetworkEventProvider.Listener {
+public class JobManager implements NetworkEventProvider.Listener, TimerDispatcher {
     public static final long NS_PER_MS = 1000000;
     public static final long NOT_RUNNING_SESSION_ID = Long.MIN_VALUE;
     public static final long NOT_DELAYED_JOB_DELAY = Long.MIN_VALUE;
@@ -40,7 +40,7 @@ public class JobManager implements NetworkEventProvider.Listener {
     private final Context appContext;
     private final NetworkUtil networkUtil;
     private final DependencyInjector dependencyInjector;
-    private final DispatchTimer dispatchTimer;
+    private final DispatchTimerInterface dispatchTimer;
     private final JobQueue persistentJobQueue;
     private final JobQueue nonPersistentJobQueue;
     private final CopyOnWriteGroupSet runningJobGroups;
@@ -50,7 +50,6 @@ public class JobManager implements NetworkEventProvider.Listener {
     private final ConcurrentHashMap<Long, CountDownLatch> nonPersistentOnAddedLocks;
     private final ScheduledExecutorService timedExecutor;
     private final Object getNextJobLock = new Object();
-    private SimpleFlushTimerDispatcher flushCounter;
     private int maxJobsFlushCap;
 
     /**
@@ -95,9 +94,9 @@ public class JobManager implements NetworkEventProvider.Listener {
             ((NetworkEventProvider) networkUtil).setListener(this);
         }
 
-        flushCounter = new SimpleFlushTimerDispatcher();
-        dispatchTimer = DispatchTimerFactory.createTimer(config.getFlushAfter_Ms(), flushCounter, true);
         maxJobsFlushCap = config.getFlushAt();
+        dispatchTimer = config.getDispatchTimer();
+        dispatchTimer.setListener(this);
 
         //is important to initialize consumers last so that they can start running
         jobConsumerExecutor = new JobConsumerExecutor(config,consumerContract);
@@ -121,7 +120,7 @@ public class JobManager implements NetworkEventProvider.Listener {
             return;
         }
         running = true;
-        flushCounter.onTimeUp(); //run once, just to get things started.
+        onTimeUp(); //run once, just to get things started.
         dispatchTimer.start();
     }
 
@@ -536,8 +535,10 @@ public class JobManager implements NetworkEventProvider.Listener {
 
         if(this.count() >= maxJobsFlushCap){ //if, by adding the job, we go over capacity...
             JqLog.d("over capacity of " + maxJobsFlushCap );
-            flushCounter.onTimeUp();
+            onTimeUp();
             dispatchTimer.reset();
+        } else if (!dispatchTimer.isRunning()){
+            dispatchTimer.start();
         }
 
         if(baseJob.isPersistent()) {
@@ -597,12 +598,13 @@ public class JobManager implements NetworkEventProvider.Listener {
         });
     }
 
-    private final class SimpleFlushTimerDispatcher implements DispatchTimer.TimerDispatcher {
-        @Override
-        public void onTimeUp() {
-            JqLog.d("attempting to flush the queue");
-            JobManager.this.notifyJobConsumer();
-        }
+    /**
+     * Default implementation of a DispatchTimer that merely notifies the JobConsumer of new jobs.
+     */
+    @Override
+    public void onTimeUp() {
+        JqLog.d("attempting to flush the queue");
+        notifyJobConsumer();
     }
 
     /**
