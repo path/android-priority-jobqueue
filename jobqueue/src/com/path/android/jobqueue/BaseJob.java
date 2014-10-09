@@ -71,7 +71,7 @@ abstract public class BaseJob implements Serializable {
      * Also, if your app crashes right after adding the job, {@code onRun} might be called without an {@code onAdded} call
      * @param id the job's ID which can be used to check the job's status
      */
-    abstract public void onAdded(String id);
+    abstract public void onAdded(long id);
 
     /**
      * The actual method that should to the work
