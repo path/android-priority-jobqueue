@@ -141,6 +141,25 @@ Maven:
 </dependency>
 ```
 
+If while building with Maven there are Dex errors or errors with using Proguard, you may need the following exclusions:
+
+``` xml
+<exclusions>
+  <exclusion>
+    <groupId>xerces</groupId>
+    <artifactId>xmlParserAPIs</artifactId>
+  </exclusion>
+  <exclusion>
+    <groupId>xpp3</groupId>
+    <artifactId>xpp3</artifactId>
+  </exclusion>
+  <exclusion>
+    <groupId>com.google.android</groupId>
+    <artifactId>android</artifactId>
+  </exclusion>
+</exclusions>
+```
+
 You can also [download][5] library jar, sources and javadoc from Maven Central.
 
 We highly recommend checking how you can configure job manager and individual jobs.
