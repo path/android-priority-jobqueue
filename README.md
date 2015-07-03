@@ -15,7 +15,8 @@ It is written primarily with [flexibility][10] & [functionality][11] in mind. Th
   - [Advantages](#advantages)
   - [Getting Started](#getting-started)
   - [Version History](#version-history)
-  - [Running Tests](#running-tests)
+  - [Building](#building)
+   - [Running Tests](#running-tests)
   - [wiki][9]
   - [Dependencies](#dependencies)
   - [License](#license)
@@ -40,7 +41,7 @@ Although not required, it is most useful when used with an event bus. It also su
 
 Since a code example is worth thousands of documentation pages, here it is.
 
-File: [PostTweetJob.java](https://github.com/yigit/android-priority-jobqueue/blob/master/examples/twitter/TwitterClient/src/com/path/android/jobqueue/examples/twitter/jobs/PostTweetJob.java)
+File: [PostTweetJob.java](https://github.com/path/android-priority-jobqueue/blob/master/examples/twitter/TwitterClient/src/com/path/android/jobqueue/examples/twitter/jobs/PostTweetJob.java)
 ``` java
 // A job to send a tweet
 public class PostTweetJob extends Job {
@@ -76,7 +77,7 @@ public class PostTweetJob extends Job {
 
 ```
 
-File: [TweetActivity.java](https://github.com/yigit/android-priority-jobqueue/blob/master/examples/twitter/TwitterClient/src/com/path/android/jobqueue/examples/twitter/SampleTwitterClient.java#L53)
+File: [TweetActivity.java](https://github.com/path/android-priority-jobqueue/blob/master/examples/twitter/TwitterClient/src/com/path/android/jobqueue/examples/twitter/SampleTwitterClient.java#L53)
 ``` java
 //...
 public void onSendClick() {
@@ -128,15 +129,15 @@ At Path, we use [greenrobot's EventBus](https://github.com/greenrobot/EventBus);
 ### Getting Started
 We distribute artifacts through maven central repository.
 
-Gradle: `compile 'com.birbit:android-priority-jobqueue:1.3'`
+Gradle: `compile 'com.path:android-priority-jobqueue:1.1.2'`
 
 Maven:
 
 ``` xml
 <dependency>
-    <groupId>com.birbit</groupId>
+    <groupId>com.path</groupId>
     <artifactId>android-priority-jobqueue</artifactId>
-    <version>1.3.1</version>
+    <version>1.1.2</version>
 </dependency>
 ```
 
@@ -149,14 +150,6 @@ We highly recommend checking how you can configure job manager and individual jo
 * [Review sample configuration][7]
 
 ### Version History
-  - 1.3.1 (April 19, 2015)
-   - Fixed issue #19 which was blocking a group forever if a job from that group is cancelled while running and then onRun fails.
-   - Updated Robolectric version and moved all testing to Gradle.
-   - Goodbye Cobertura, Welcome Jacoco!
-  - 1.3 (March 23, 2015)
-   - Ability to add tags to jobs. These tags can be used to later retrieve jobs.
-   - Added long awaited job cancellation. You can use tags to cancel jobs.
-   - Removed deprecated BaseJob class. This may break backward compatibility.
   - 1.1.2 (Feb 18, 2014)
    - Report exceptions to logger if addInBackground fails. (#31)
   - 1.1.1 (Feb 8, 2014)
@@ -181,22 +174,24 @@ We highly recommend checking how you can configure job manager and individual jo
 - - [Fest Util](http://easytesting.org/) ([license](http://www.apache.org/licenses/LICENSE-2.0))
 - - [Hamcrest](https://code.google.com/p/hamcrest/) ([license](http://opensource.org/licenses/BSD-3-Clause))
 - For code coverage report, we use:
+- - [Cobertura](http://cobertura.github.io/cobertura/) ([license](https://github.com/cobertura/cobertura/blob/master/LICENSE.txt/))
 - Sample Twitter client uses:
 - - [Twitter4j](http://twitter4j.org/en)
 - - [EventBus](https://github.com/greenrobot/EventBus)
 - - [Path's fork of greenDAO](https://github.com/path/greenDAO) . ([original repo](https://github.com/greenrobot/greenDAO))
 
 ### Building
+We are in the process of moving build system from ant to gradle. Right now, you can build with gradle but if you want to run tests, you'll need ant.
 
 * Clone the repo
 * `> cd jobqueue`
-* `> ./gradlew clean assembleDebug assembleDebugUnitTest test`
+* `> ant clean build-jar`
 *
 This will create a jar file under _release_ folder.
 
 #### Running Tests
 * > `cd jobqueue`
-* > `./gradlew clean assembleDebug assembleDebugUnitTest test`
+* > `ant clean test`
 
 
 ## License
@@ -207,7 +202,6 @@ Android Priority Jobqueue is made available under the [MIT license](http://opens
 The MIT License (MIT)
 
 Copyright (c) 2013 Path, Inc.
-Copyright (c) 2014 Google, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -229,15 +223,15 @@ THE SOFTWARE.
 </pre>
 
 
-[1]: https://github.com/yigit/android-priority-jobqueue/blob/master/jobqueue/src/com/path/android/jobqueue/network/NetworkUtil.java
-[2]: https://github.com/yigit/android-priority-jobqueue/blob/master/jobqueue/src/com/path/android/jobqueue/network/NetworkEventProvider.java
+[1]: https://github.com/path/android-priority-jobqueue/blob/master/jobqueue/src/com/path/android/jobqueue/network/NetworkUtil.java
+[2]: https://github.com/path/android-priority-jobqueue/blob/master/jobqueue/src/com/path/android/jobqueue/network/NetworkEventProvider.java
 [3]: http://path.github.io/android-priority-jobqueue/coverage-report/index.html
 [4]: http://path.github.io/android-priority-jobqueue/javadoc/index.html
 [5]: http://search.maven.org/#search%7Cga%7C1%7Ca%3A%22android-priority-jobqueue%22
-[6]: https://github.com/yigit/android-priority-jobqueue/tree/master/examples
-[7]: https://github.com/yigit/android-priority-jobqueue/blob/master/examples/twitter/TwitterClient/src/com/path/android/jobqueue/examples/twitter/TwitterApplication.java#L26
+[6]: https://github.com/path/android-priority-jobqueue/tree/master/examples
+[7]: https://github.com/path/android-priority-jobqueue/blob/master/examples/twitter/TwitterClient/src/com/path/android/jobqueue/examples/twitter/TwitterApplication.java#L26
 [8]: http://www.youtube.com/watch?v=xHXn3Kg2IQE
-[9]: https://github.com/yigit/android-priority-jobqueue/wiki
-[10]: https://github.com/yigit/android-priority-jobqueue/wiki/Job-Manager-Configuration
-[11]: https://github.com/yigit/android-priority-jobqueue/wiki/Job-Configuration
-[12]: https://github.com/yigit/android-priority-jobqueue/blob/master/jobqueue/src/com/path/android/jobqueue/Params.java
+[9]: https://github.com/path/android-priority-jobqueue/wiki
+[10]: https://github.com/path/android-priority-jobqueue/wiki/Job-Manager-Configuration
+[11]: https://github.com/path/android-priority-jobqueue/wiki/Job-Configuration
+[12]: https://github.com/path/android-priority-jobqueue/blob/master/jobqueue/src/com/path/android/jobqueue/Params.java

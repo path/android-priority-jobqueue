@@ -1,5 +1,6 @@
 package com.path.android.jobqueue.examples.twitter.jobs;
 
+import com.path.android.jobqueue.BaseJob;
 import com.path.android.jobqueue.Job;
 import com.path.android.jobqueue.Params;
 import com.path.android.jobqueue.examples.twitter.controllers.TwitterController;
