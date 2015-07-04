@@ -1,10 +1,17 @@
 import java.util.regex.Pattern
+
+apply plugin: 'com.android.library'
+
+Properties releaseConfig = new Properties()
+releaseConfig.load(new FileInputStream("${projectDir}/releaseConfig.properties"))
+ext.releaseConfig = releaseConfig
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.10'
+    gradleVersion = '2.2.1'
 }
 
 apply plugin: 'maven'
 apply plugin: 'signing'
+apply plugin: 'jacoco'
 
 buildscript {
     repositories {
@@ -12,8 +19,13 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.8.+'
+        classpath 'com.android.tools.build:gradle:1.1.3'
     }
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
 }
 
 configurations {
@@ -22,22 +34,34 @@ configurations {
     }
 }
 
-apply plugin: 'android-library'
+dependencies {
+    testCompile 'junit:junit:4.12'
+    testCompile "org.robolectric:robolectric:3.0-rc3"
+    testCompile 'org.hamcrest:hamcrest-core:1.3'
+    testCompile 'org.easytesting:fest-util:1.2.5'
+    testCompile 'org.easytesting:fest-reflect:1.4.1'
+
+}
+
+
 
 android {
-    compileSdkVersion 19
-    buildToolsVersion "19.0.1"
-    sourceSets {
-        main {
-            manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = ['src']
-            res.srcDirs = ['res']
+    compileSdkVersion 21
+    buildToolsVersion "22.0.1"
+    buildTypes {
+        debug {
+            testCoverageEnabled = true
         }
+    }
+
+    defaultConfig {
+        minSdkVersion 7
+        targetSdkVersion 21
     }
 }
 
 //READ VERSION NAME
-def manifestFile = file("AndroidManifest.xml")
+def manifestFile = file("${projectDir}/src/main/AndroidManifest.xml")
 def pattern = Pattern.compile("versionName=\"([\\d\\.\\w\\-]+)\"")
 def manifestText = manifestFile.getText()
 def matcher = pattern.matcher(manifestText)
@@ -49,7 +73,7 @@ println "version name:${manifestVersionName}"
 android.libraryVariants.all { variant ->
     def name = variant.buildType.name
     println "checking variant ${name}"
-    if (name.equals(com.android.builder.BuilderConstants.DEBUG)) {
+    if (name.equals(com.android.builder.core.BuilderConstants.DEBUG)) {
         return; // Skip debug builds.
     }
     def suffix = name.capitalize()
@@ -61,7 +85,7 @@ android.libraryVariants.all { variant ->
     }
     def javadocTask = project.tasks.create(name: "javadoc${suffix}", type: Javadoc) {
         source = variant.javaCompile.source
-        ext.androidJar = "${android.plugin.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar"
+        ext.androidJar = "${android.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar"
         classpath = files(variant.javaCompile.classpath.files) + files(ext.androidJar)
     }
 
@@ -71,7 +95,7 @@ android.libraryVariants.all { variant ->
     }
 
     def sourcesJarTask = project.tasks.create(name: "sourceJar${suffix}", type: Jar) {
-        from android.sourceSets.main.allSource
+        from android.sourceSets.main.getJava().getSrcDirs()
         classifier = 'sources'
     }
     artifacts.add('archives', jarTask);
@@ -80,7 +104,6 @@ android.libraryVariants.all { variant ->
 }
 //create jar tasks end
 
-
 afterEvaluate { project ->
     uploadArchives {
         repositories {
@@ -88,27 +111,28 @@ afterEvaluate { project ->
                 beforeDeployment {
                     MavenDeployment deployment -> signing.signPom(deployment)
                 }
-                println "sonatype username: ${sonatypeUsername}"
+                println "ossr username: ${releaseConfig.ossrhUsername}"
 
                 pom.artifactId = 'android-priority-jobqueue'
 
+
                 snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
-                    authentication(userName: sonatypeUsername, password: sonotypePassword)
+                    authentication(userName: releaseConfig.ossrhUsername, password: releaseConfig.ossrhPassword)
                 }
 
                 repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
-                    authentication(userName: sonatypeUsername, password: sonotypePassword)
+                    authentication(userName: releaseConfig.ossrhUsername, password: releaseConfig.ossrhPassword)
                 }
 
                 pom.project {
                     modelVersion '4.0.0'
-                    groupId 'com.path'
+                    groupId 'com.birbit'
                     artifactId 'android-priority-jobqueue'
                     packaging 'jar'
                     name 'Android Priority Job Queue'
                     version manifestVersionName
                     description 'a Job Queue specifically written for Android to easily schedule jobs (tasks) that run in the background, improving UX and application stability.'
-                    url 'https://github.com/path/android-priority-jobqueue'
+                    url 'https://github.com/yigit/android-priority-jobqueue'
 
                     parent {
                         groupId 'org.sonatype.oss'
@@ -117,9 +141,9 @@ afterEvaluate { project ->
                     }
 
                     scm {
-                        connection 'scm:git:git@github.com:path/android-priority-jobqueue.git'
-                        developerConnection 'scm:git:git@github.com:path/android-priority-jobqueue.git'
-                        url 'git@github.com:path/android-priority-jobqueue.git'
+                        connection 'scm:git:git@github.com:yigit/android-priority-jobqueue.git'
+                        developerConnection 'scm:git:git@github.com:yigit/android-priority-jobqueue.git'
+                        url 'git@github.com:yigit/android-priority-jobqueue.git'
                     }
 
                     licenses {
@@ -136,14 +160,6 @@ afterEvaluate { project ->
                             name "Yigit Boyar"
                         }
                     }
-
-                    dependencies {
-                        dependency {
-                            groupId 'com.google.android'
-                            artifactId 'android'
-                            version '2.2.1'
-                        }
-                    }
                 }
             }
         }
@@ -153,4 +169,28 @@ afterEvaluate { project ->
         required { gradle.taskGraph.hasTask("uploadArchives") }
         sign configurations.archives
     }
+}
+
+task jacocoTestReport(type:JacocoReport, dependsOn: "testDebug") {
+    group = "Reporting"
+
+    description = "Generate Jacoco coverage reports"
+
+    classDirectories = fileTree(
+            dir: "$buildDir/intermediates/classes/debug",
+            excludes: ['**/R.class',
+                       '**/R$*.class',
+                       '**/BuildConfig.*',
+                       '**/Manifest*.*']
+    )
+
+    additionalSourceDirs = files(android.sourceSets.main.getJava().getSrcDirs())
+    sourceDirectories = files(android.sourceSets.main.getJava().getSrcDirs())
+    executionData = files("$buildDir/jacoco/testDebug.exec")
+
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+
 }
