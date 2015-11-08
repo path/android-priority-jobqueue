@@ -1,3 +1,6 @@
+### Development in this repository is stopped. Future development continues on https://github.com/yigit/android-priority-jobqueue
+==========================
+
 ![logo](http://downloads.path.com/logo.png)
 
 Android Priority Job Queue (Job Manager)
