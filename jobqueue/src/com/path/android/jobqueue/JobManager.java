@@ -12,6 +12,7 @@ import com.path.android.jobqueue.nonPersistentQueue.NonPersistentPriorityQueue;
 import com.path.android.jobqueue.persistentQueue.sqlite.SqliteJobQueue;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.*;
 
 /**
@@ -351,6 +352,50 @@ public class JobManager implements NetworkEventProvider.Listener {
         }
 
         return JobStatus.WAITING_READY;
+    }
+
+    public List<Long> getJobIds(boolean isPersistent) {
+        if (isPersistent) {
+            synchronized (persistentJobQueue) {
+                return persistentJobQueue.getJobIds();
+            }
+        } else {
+            synchronized (nonPersistentJobQueue) {
+                return nonPersistentJobQueue.getJobIds();
+            }
+        }
+    }
+
+    public BaseJob getJob(long id, boolean isPersistent) {
+        JobHolder holder;
+        if(isPersistent) {
+            synchronized (persistentJobQueue) {
+                holder = persistentJobQueue.findJobById(id);
+            }
+        } else {
+            synchronized (nonPersistentJobQueue) {
+                holder = nonPersistentJobQueue.findJobById(id);
+            }
+        }
+        if (holder != null) {
+            return holder.getBaseJob();
+        } else {
+            return null;
+        }
+    }
+
+    public void removeJob(long id, boolean isPersistent) {
+        JobHolder holder;
+        if(isPersistent) {
+            synchronized (persistentJobQueue) {
+                holder = persistentJobQueue.findJobById(id);
+            }
+        } else {
+            synchronized (nonPersistentJobQueue) {
+                holder = nonPersistentJobQueue.findJobById(id);
+            }
+        }
+        removeJob(holder);
     }
 
     private void removeJob(JobHolder jobHolder) {
