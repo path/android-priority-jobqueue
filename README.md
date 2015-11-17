@@ -3,6 +3,8 @@
 
 ![logo](http://downloads.path.com/logo.png)
 
+This project is currently being maintained here - https://github.com/yigit/android-priority-jobqueue
+
 Android Priority Job Queue (Job Manager)
 ==========================
 
