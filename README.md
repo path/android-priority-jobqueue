@@ -174,7 +174,7 @@ We highly recommend checking how you can configure job manager and individual jo
 - For testing, we use:
 - - [Junit 4](http://junit.org/) ([license](https://github.com/junit-team/junit/blob/master/LICENSE.txt))
 - - [Robolectric](http://robolectric.org/) ([license](https://github.com/robolectric/robolectric/blob/master/LICENSE.txt))
-- - [Fest Util](http://easytesting.org/) ([license](http://www.apache.org/licenses/LICENSE-2.0))
+- - [Fest Util](https://github.com/easytesting/fest-util) ([license](http://www.apache.org/licenses/LICENSE-2.0))
 - - [Hamcrest](https://code.google.com/p/hamcrest/) ([license](http://opensource.org/licenses/BSD-3-Clause))
 - For code coverage report, we use:
 - - [Cobertura](http://cobertura.github.io/cobertura/) ([license](https://github.com/cobertura/cobertura/blob/master/LICENSE.txt/))
