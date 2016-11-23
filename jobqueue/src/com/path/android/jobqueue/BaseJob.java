@@ -69,8 +69,9 @@ abstract public class BaseJob implements Serializable {
      * this means job will eventually run. this is a good time to update local database and dispatch events
      * Changes to this class will not be preserved if your job is persistent !!!
      * Also, if your app crashes right after adding the job, {@code onRun} might be called without an {@code onAdded} call
+     * @param id the job's ID which can be used to check the job's status
      */
-    abstract public void onAdded();
+    abstract public void onAdded(long id);
 
     /**
      * The actual method that should to the work

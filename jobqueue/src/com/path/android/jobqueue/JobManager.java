@@ -514,7 +514,7 @@ public class JobManager implements NetworkEventProvider.Listener {
             //inject members b4 calling onAdded
             dependencyInjector.inject(baseJob);
         }
-        jobHolder.getBaseJob().onAdded();
+        jobHolder.getBaseJob().onAdded(id);
         if(baseJob.isPersistent()) {
             synchronized (persistentJobQueue) {
                 clearOnAddedLock(persistentOnAddedLocks, id);
