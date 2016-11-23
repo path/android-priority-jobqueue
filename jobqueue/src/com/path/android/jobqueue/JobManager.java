@@ -1,10 +1,13 @@
 package com.path.android.jobqueue;
 
 import android.content.Context;
+
 import com.path.android.jobqueue.cachedQueue.CachedJobQueue;
 import com.path.android.jobqueue.config.Configuration;
 import com.path.android.jobqueue.di.DependencyInjector;
 import com.path.android.jobqueue.executor.JobConsumerExecutor;
+import com.path.android.jobqueue.flush.DispatchTimerInterface;
+import com.path.android.jobqueue.flush.DispatchTimerInterface.TimerDispatcher;
 import com.path.android.jobqueue.log.JqLog;
 import com.path.android.jobqueue.network.NetworkEventProvider;
 import com.path.android.jobqueue.network.NetworkUtil;
@@ -12,7 +15,11 @@ import com.path.android.jobqueue.nonPersistentQueue.NonPersistentPriorityQueue;
 import com.path.android.jobqueue.persistentQueue.sqlite.SqliteJobQueue;
 
 import java.util.Collection;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * a JobManager that supports;
@@ -22,7 +29,7 @@ import java.util.concurrent.*;
  * -> Grouping jobs so that they won't run at the same time
  * -> Stats like waiting Job Count
  */
-public class JobManager implements NetworkEventProvider.Listener {
+public class JobManager implements NetworkEventProvider.Listener, TimerDispatcher {
     public static final long NS_PER_MS = 1000000;
     public static final long NOT_RUNNING_SESSION_ID = Long.MIN_VALUE;
     public static final long NOT_DELAYED_JOB_DELAY = Long.MIN_VALUE;
@@ -33,6 +40,7 @@ public class JobManager implements NetworkEventProvider.Listener {
     private final Context appContext;
     private final NetworkUtil networkUtil;
     private final DependencyInjector dependencyInjector;
+    private final DispatchTimerInterface dispatchTimer;
     private final JobQueue persistentJobQueue;
     private final JobQueue nonPersistentJobQueue;
     private final CopyOnWriteGroupSet runningJobGroups;
@@ -42,6 +50,7 @@ public class JobManager implements NetworkEventProvider.Listener {
     private final ConcurrentHashMap<Long, CountDownLatch> nonPersistentOnAddedLocks;
     private final ScheduledExecutorService timedExecutor;
     private final Object getNextJobLock = new Object();
+    private int maxJobsFlushCap;
 
     /**
      * Default constructor that will create a JobManager with 1 {@link SqliteJobQueue} and 1 {@link NonPersistentPriorityQueue}
@@ -84,18 +93,23 @@ public class JobManager implements NetworkEventProvider.Listener {
         if(networkUtil instanceof NetworkEventProvider) {
             ((NetworkEventProvider) networkUtil).setListener(this);
         }
+
+        maxJobsFlushCap = config.getFlushAt();
+        dispatchTimer = config.getDispatchTimer();
+        dispatchTimer.setListener(this);
+
         //is important to initialize consumers last so that they can start running
         jobConsumerExecutor = new JobConsumerExecutor(config,consumerContract);
         timedExecutor = Executors.newSingleThreadScheduledExecutor();
         start();
     }
 
-
     /**
      * Stops consuming jobs. Currently running jobs will be finished but no new jobs will be run.
      */
     public void stop() {
         running = false;
+        dispatchTimer.cancel();
     }
 
     /**
@@ -106,7 +120,8 @@ public class JobManager implements NetworkEventProvider.Listener {
             return;
         }
         running = true;
-        notifyJobConsumer();
+        onTimeUp(); //run once, just to get things started.
+        dispatchTimer.start();
     }
 
     /**
@@ -386,7 +401,9 @@ public class JobManager implements NetworkEventProvider.Listener {
      */
     @Override
     public void onNetworkChange(boolean isConnected) {
-        ensureConsumerWhenNeeded(isConnected);
+        if(dispatchTimer != null && !dispatchTimer.isRunning()){
+            dispatchTimer.start();
+        }
     }
 
     @SuppressWarnings("FieldCanBeLocal")
@@ -515,6 +532,15 @@ public class JobManager implements NetworkEventProvider.Listener {
             dependencyInjector.inject(baseJob);
         }
         jobHolder.getBaseJob().onAdded();
+
+        if(this.count() >= maxJobsFlushCap){ //if, by adding the job, we go over capacity...
+            JqLog.d("over capacity of " + maxJobsFlushCap );
+            onTimeUp();
+            dispatchTimer.reset();
+        } else if (!dispatchTimer.isRunning()){
+            dispatchTimer.start();
+        }
+
         if(baseJob.isPersistent()) {
             synchronized (persistentJobQueue) {
                 clearOnAddedLock(persistentOnAddedLocks, id);
@@ -524,7 +550,6 @@ public class JobManager implements NetworkEventProvider.Listener {
                 clearOnAddedLock(nonPersistentOnAddedLocks, id);
             }
         }
-        notifyJobConsumer();
         return id;
     }
 
@@ -563,7 +588,7 @@ public class JobManager implements NetworkEventProvider.Listener {
                 try {
                     final long runDelay = (System.nanoTime() - callTime) / NS_PER_MS;
                     long id = addJob(priority, Math.max(0, delay - runDelay), baseJob);
-                    if(callback != null) {
+                    if (callback != null) {
                         callback.onAdded(id);
                     }
                 } catch (Throwable t) {
@@ -573,6 +598,14 @@ public class JobManager implements NetworkEventProvider.Listener {
         });
     }
 
+    /**
+     * Default implementation of a DispatchTimer that merely notifies the JobConsumer of new jobs.
+     */
+    @Override
+    public void onTimeUp() {
+        JqLog.d("attempting to flush the queue");
+        notifyJobConsumer();
+    }
 
     /**
      * Default implementation of QueueFactory that creates one {@link SqliteJobQueue} and one {@link NonPersistentPriorityQueue}
